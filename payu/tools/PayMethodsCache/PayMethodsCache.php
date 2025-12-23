@@ -135,8 +135,12 @@ class PayMethodsCache
      */
     private static function initializeOpenPayU($currency, $version)
     {
+        // Convert array to object if needed for consistent handling
+        if (is_array($currency)) {
+            $currency = (object)$currency;
+        }
         $sdkInitializer = new PayUSDKInitializer();
-        return $sdkInitializer->initializeOpenPayU($currency['iso_code'], $version);
+        return $sdkInitializer->initializeOpenPayU($currency->iso_code, $version);
     }
 
     private static function isPayTypeEnabled($payTypeStringValue, $currency, $lang, $amount, $version, $noCache)
