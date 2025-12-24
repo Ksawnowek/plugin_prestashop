@@ -44,13 +44,16 @@ class PayMethodsCache
     {
         // Convert array to object if needed for consistent handling
         if (is_array($currency)) {
+            Logger::addLog('PayU PayMethodsCache: Currency is array, converting to object. Data: ' . print_r($currency, true), 1);
             $currency = (object)$currency;
+        } else {
+            Logger::addLog('PayU PayMethodsCache: Currency type: ' . gettype($currency) . ', iso_code: ' . (is_object($currency) && isset($currency->iso_code) ? $currency->iso_code : 'N/A'), 1);
         }
 
         $init = static::initializeOpenPayU($currency, $version);
         if (!$init) {
             $currencyInfo = is_object($currency) && isset($currency->iso_code) ? $currency->iso_code : 'unknown';
-            SimplePayuLogger::addLog('cache', __FUNCTION__, 'Init failed for currency: ' . $currencyInfo);
+            Logger::addLog('PayU PayMethodsCache: Init FAILED for currency: ' . $currencyInfo, 3);
             throw new \Exception('OPU not properly configured for currency: ' . $currencyInfo);
         }
 

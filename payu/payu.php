@@ -1107,7 +1107,19 @@ class PayU extends PaymentModule
             $paymentMethods = $params['paymentMethods'];
         } else {
             $currencyData = Currency::getCurrency($this->context->cart->id_currency);
+            Logger::addLog('PayU hookPaymentOptions: Currency data type: ' . gettype($currencyData) . ', cart currency ID: ' . $this->context->cart->id_currency, 1);
+
+            if (is_array($currencyData)) {
+                Logger::addLog('PayU hookPaymentOptions: Currency is ARRAY - iso_code: ' . (isset($currencyData['iso_code']) ? $currencyData['iso_code'] : 'N/A'), 1);
+            } else {
+                Logger::addLog('PayU hookPaymentOptions: Currency is ' . gettype($currencyData), 1);
+            }
+
             $paymentMethods = $this->getPaymethods((object)$currencyData, $totalPrice);
+
+            if (isset($paymentMethods['error'])) {
+                Logger::addLog('PayU hookPaymentOptions: ERROR getting payment methods: ' . $paymentMethods['error'], 3);
+            }
         }
 
         // credit payment options definition must stay on top, because it assigns smarty variables,
@@ -1981,6 +1993,8 @@ class PayU extends PaymentModule
      */
     public function getPaymethods($currency, $totalPrice)
     {
+        Logger::addLog('PayU getPaymethods: Currency type: ' . gettype($currency) . ', iso_code: ' . (is_object($currency) && isset($currency->iso_code) ? $currency->iso_code : 'N/A'), 1);
+
         try {
             $retrieve = PayMethodsCache::getPayMethods($currency, $this->getLanguage(), $this->getVersion());
 
@@ -1989,18 +2003,19 @@ class PayU extends PaymentModule
                     'payByLinks' => $this->reorderPaymentMethods(PayMethodsCache::extractPayByLinks($retrieve), $totalPrice)
                 ];
             } else {
+                Logger::addLog('PayU getPaymethods: Retrieve status: ' . $retrieve->getStatus(), 2);
                 return [
                     'error' => $retrieve->getStatus() . ': ' . OpenPayU_Util::statusDesc($retrieve->getStatus())
                 ];
             }
 
         } catch (OpenPayU_Exception $e) {
-            SimplePayuLogger::addLog('payment', __FUNCTION__, 'OpenPayU_Exception: ' . $e->getMessage());
+            Logger::addLog('PayU getPaymethods: OpenPayU_Exception: ' . $e->getMessage(), 3);
             return [
                 'error' => $e->getMessage()
             ];
         } catch (Exception $e) {
-            SimplePayuLogger::addLog('payment', __FUNCTION__, 'Exception: ' . $e->getMessage());
+            Logger::addLog('PayU getPaymethods: Exception: ' . $e->getMessage(), 3);
             return [
                 'error' => $e->getMessage()
             ];
