@@ -1107,25 +1107,7 @@ class PayU extends PaymentModule
             $paymentMethods = $params['paymentMethods'];
         } else {
             $currencyData = Currency::getCurrency($this->context->cart->id_currency);
-            SimplePayuLogger::addLog('payment', __FUNCTION__, 'Currency data from getCurrency: ' . gettype($currencyData), $currencyData);
-
-            if (!$currencyData) {
-                SimplePayuLogger::addLog('payment', __FUNCTION__, 'Currency data is empty or false', $this->context->cart->id_currency);
-                return;
-            }
-
             $paymentMethods = $this->getPaymethods((object)$currencyData, $totalPrice);
-        }
-
-        // Check if payment methods were retrieved successfully
-        if (isset($paymentMethods['error'])) {
-            SimplePayuLogger::addLog('payment', __FUNCTION__, 'Payment methods error: ' . $paymentMethods['error'], $currencyData);
-            return;
-        }
-
-        if (!isset($paymentMethods['payByLinks'])) {
-            SimplePayuLogger::addLog('payment', __FUNCTION__, 'No payByLinks in payment methods', $paymentMethods);
-            return;
         }
 
         // credit payment options definition must stay on top, because it assigns smarty variables,
@@ -1135,7 +1117,7 @@ class PayU extends PaymentModule
             'conditionTemplate' => _PS_MODULE_DIR_ . 'payu/views/templates/front/conditions17.tpl',
             'conditionUrl' => $this->getPayConditionUrl(),
             'payuPayAction' => $this->context->link->getModuleLink('payu', 'payment'),
-            'paymentMethods' => $paymentMethods['payByLinks'],
+            'paymentMethods' => isset($paymentMethods['payByLinks']) ? $paymentMethods['payByLinks'] : [],
             'separateBlik' => Configuration::get('PAYU_SEPARATE_BLIK_PAYMENT'),
             'separateInstallments' => Configuration::get('PAYU_SEPARATE_INSTALLMENTS'),
             'separateTwistoSlice' => Configuration::get('PAYU_SEPARATE_TWISTO_SLICE'),
@@ -1999,9 +1981,6 @@ class PayU extends PaymentModule
      */
     public function getPaymethods($currency, $totalPrice)
     {
-        // Debug logging
-        SimplePayuLogger::addLog('payment', __FUNCTION__, 'Currency type: ' . gettype($currency), $currency);
-
         try {
             $retrieve = PayMethodsCache::getPayMethods($currency, $this->getLanguage(), $this->getVersion());
 
@@ -2016,12 +1995,12 @@ class PayU extends PaymentModule
             }
 
         } catch (OpenPayU_Exception $e) {
-            SimplePayuLogger::addLog('payment', __FUNCTION__, 'OpenPayU_Exception: ' . $e->getMessage(), $currency);
+            SimplePayuLogger::addLog('payment', __FUNCTION__, 'OpenPayU_Exception: ' . $e->getMessage());
             return [
                 'error' => $e->getMessage()
             ];
         } catch (Exception $e) {
-            SimplePayuLogger::addLog('payment', __FUNCTION__, 'Exception: ' . $e->getMessage(), $currency);
+            SimplePayuLogger::addLog('payment', __FUNCTION__, 'Exception: ' . $e->getMessage());
             return [
                 'error' => $e->getMessage()
             ];

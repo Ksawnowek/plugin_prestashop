@@ -42,21 +42,15 @@ class PayMethodsCache
      */
     public static function getPayMethods($currency, $lang, $version)
     {
-        // Debug logging
-        SimplePayuLogger::addLog('cache', __FUNCTION__, 'Currency input type: ' . gettype($currency), $currency);
-
         // Convert array to object if needed for consistent handling
         if (is_array($currency)) {
-            SimplePayuLogger::addLog('cache', __FUNCTION__, 'Converting array to object', $currency);
             $currency = (object)$currency;
         }
-
-        SimplePayuLogger::addLog('cache', __FUNCTION__, 'Currency after conversion: ' . gettype($currency), $currency);
 
         $init = static::initializeOpenPayU($currency, $version);
         if (!$init) {
             $currencyInfo = is_object($currency) && isset($currency->iso_code) ? $currency->iso_code : 'unknown';
-            SimplePayuLogger::addLog('cache', __FUNCTION__, 'Init failed for currency: ' . $currencyInfo, $currency);
+            SimplePayuLogger::addLog('cache', __FUNCTION__, 'Init failed for currency: ' . $currencyInfo);
             throw new \Exception('OPU not properly configured for currency: ' . $currencyInfo);
         }
 
