@@ -22,6 +22,10 @@ class PayMethodsCache
     public static function isPaytypeAvailable($paytype, $currency, $lang, $amount, $version, $noCache = false)
     {
         try {
+            // Convert array to object if needed for consistent handling
+            if (is_array($currency)) {
+                $currency = (object)$currency;
+            }
             return self::isPayTypeEnabled($paytype, $currency, $lang, $amount, $version, $noCache);
         } catch (Exception $e) {
             return false;
@@ -38,9 +42,14 @@ class PayMethodsCache
      */
     public static function getPayMethods($currency, $lang, $version)
     {
+        // Convert array to object if needed for consistent handling
+        if (is_array($currency)) {
+            $currency = (object)$currency;
+        }
+
         $init = static::initializeOpenPayU($currency, $version);
         if (!$init) {
-            throw new \Exception('OPU not properly configured for currency: ' . $currency);
+            throw new \Exception('OPU not properly configured for currency: ' . $currency->iso_code);
         }
 
         $posId = OpenPayU_Configuration::getMerchantPosId();
@@ -78,6 +87,11 @@ class PayMethodsCache
      */
     public static function isAnyCreditPaytypeEnabled($currency, $lang, $version)
     {
+        // Convert array to object if needed for consistent handling
+        if (is_array($currency)) {
+            $currency = (object)$currency;
+        }
+
         $init = static::initializeOpenPayU($currency, $version);
         if (!$init) {
             return false;
@@ -145,6 +159,11 @@ class PayMethodsCache
 
     private static function isPayTypeEnabled($payTypeStringValue, $currency, $lang, $amount, $version, $noCache)
     {
+        // Convert array to object if needed for consistent handling
+        if (is_array($currency)) {
+            $currency = (object)$currency;
+        }
+
         $init = static::initializeOpenPayU($currency, $version);
         if (!$init) {
             return false;
