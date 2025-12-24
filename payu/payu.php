@@ -1106,7 +1106,26 @@ class PayU extends PaymentModule
         if ($retry) {
             $paymentMethods = $params['paymentMethods'];
         } else {
-            $paymentMethods = $this->getPaymethods((object)Currency::getCurrency($this->context->cart->id_currency), $totalPrice);
+            $currencyData = Currency::getCurrency($this->context->cart->id_currency);
+            SimplePayuLogger::addLog('payment', __FUNCTION__, 'Currency data from getCurrency: ' . gettype($currencyData), $currencyData);
+
+            if (!$currencyData) {
+                SimplePayuLogger::addLog('payment', __FUNCTION__, 'Currency data is empty or false', $this->context->cart->id_currency);
+                return;
+            }
+
+            $paymentMethods = $this->getPaymethods((object)$currencyData, $totalPrice);
+        }
+
+        // Check if payment methods were retrieved successfully
+        if (isset($paymentMethods['error'])) {
+            SimplePayuLogger::addLog('payment', __FUNCTION__, 'Payment methods error: ' . $paymentMethods['error'], $currencyData);
+            return;
+        }
+
+        if (!isset($paymentMethods['payByLinks'])) {
+            SimplePayuLogger::addLog('payment', __FUNCTION__, 'No payByLinks in payment methods', $paymentMethods);
+            return;
         }
 
         // credit payment options definition must stay on top, because it assigns smarty variables,
@@ -1980,6 +1999,9 @@ class PayU extends PaymentModule
      */
     public function getPaymethods($currency, $totalPrice)
     {
+        // Debug logging
+        SimplePayuLogger::addLog('payment', __FUNCTION__, 'Currency type: ' . gettype($currency), $currency);
+
         try {
             $retrieve = PayMethodsCache::getPayMethods($currency, $this->getLanguage(), $this->getVersion());
 
@@ -1994,6 +2016,12 @@ class PayU extends PaymentModule
             }
 
         } catch (OpenPayU_Exception $e) {
+            SimplePayuLogger::addLog('payment', __FUNCTION__, 'OpenPayU_Exception: ' . $e->getMessage(), $currency);
+            return [
+                'error' => $e->getMessage()
+            ];
+        } catch (Exception $e) {
+            SimplePayuLogger::addLog('payment', __FUNCTION__, 'Exception: ' . $e->getMessage(), $currency);
             return [
                 'error' => $e->getMessage()
             ];
